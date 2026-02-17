@@ -14,6 +14,32 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div id="auth-screen" style="position:fixed; inset:0; background:#0e0f1a; z-index:99999; display:flex; align-items:center; justify-content:center; padding:20px; flex-direction:column;">
+  <div class="card stack" style="max-width:350px; width:100%; text-align:center;">
+    <img src="icons/HeaderIcon.png" style="width:80px; margin:0 auto 20px auto; border-radius:15px;">
+    <h2 id="auth-title">Willkommen zurück</h2>
+    <p id="auth-desc" class="small muted">Bitte logge dich ein, um fortzufahren.</p>
+    
+    <div id="login-fields" class="stack" style="margin-top:20px;">
+      <input type="email" id="email" placeholder="E-Mail Adresse">
+      <input type="password" id="password" placeholder="Passwort">
+      <button id="mainAuthBtn" class="primary">Login</button>
+      <p class="small" style="margin-top:10px;">
+        <span id="toggleText">Noch keinen Account?</span> 
+        <a href="#" id="toggleAuth" style="color:#4a82ff; text-decoration:none; font-weight:bold;">Registrieren</a>
+      </p>
+    </div>
+
+    <div id="waiting-room" style="display:none;">
+      <div style="font-size:40px; margin-bottom:15px;">⏳</div>
+      <h3>Warteliste</h3>
+      <p class="small muted">Dein Account wurde erstellt. Bitte warte, bis der Admin dich für den <b>AYTO Solver 2026</b> freischaltet.</p>
+      <button onclick="location.reload()" class="ghost small" style="margin-top:20px;">Status prüfen</button>
+      <button id="logoutBtn" class="danger small" style="margin-top:10px; background:none; border:1px solid #c42c2c;">Abmelden</button>
+    </div>
+  </div>
+</div>
+
   <header>
     <img class="logo" src="HeaderIcon.png" alt="Are You The One Logo">
     <h1>AYTO Solver 2026</h1>
