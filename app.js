@@ -1,9 +1,7 @@
-// Wir nutzen die CDN-Links, damit der Browser die Funktionen direkt laden kann
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// Deine Konfiguration von Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAZUbw2JgQVCB_6MSSQQoM0QsPpwWDE7wk",
   authDomain: "ayto-solver.firebaseapp.com",
@@ -13,12 +11,10 @@ const firebaseConfig = {
   appId: "1:590851817388:web:b743accfe5ab1bac544409"
 };
 
-// Firebase initialisieren
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Variable für den Modus (Login oder Registrieren)
 let isRegisterMode = false;
 
 // --- 🔐 AUTH-LOGIK ---
@@ -28,25 +24,48 @@ document.addEventListener('DOMContentLoaded', () => {
     const authScreen = document.getElementById('auth-screen');
     const loginFields = document.getElementById('login-fields');
     const waitingRoom = document.getElementById('waiting-room');
+    const toggleAuth = document.getElementById('toggleAuth');
+    const logoutBtn = document.getElementById('logoutBtn');
 
     // Prüfen, ob der User eingeloggt ist und Freigabe hat
     onAuthStateChanged(auth, async (user) => {
         if (user) {
-            const userDoc = await getDoc(doc(db, "users", user.uid));
-            if (userDoc.exists() && userDoc.data().approved === true) {
-                authScreen.style.display = "none"; // App öffnen
-            } else {
-                loginFields.style.display = "none";
-                waitingRoom.style.display = "block"; // Warteraum anzeigen
-            }
+            try {
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists() && userDoc.data().approved === true) {
+                    authScreen.style.display = "none"; 
+                } else {
+                    loginFields.style.display = "none";
+                    waitingRoom.style.display = "block";
+                    document.getElementById('auth-title').innerText = "Warteliste";
+                }
+            } catch (e) { console.error("Fehler beim Laden der User-Daten:", e); }
         } else {
             authScreen.style.display = "flex";
             loginFields.style.display = "flex";
             waitingRoom.style.display = "none";
+            document.getElementById('auth-title').innerText = "Willkommen zurück";
         }
     });
 
-    // Klick auf den Haupt-Button (Login oder Registrieren)
+    // Login / Registrieren Umschalter
+    if(toggleAuth) {
+        toggleAuth.onclick = (e) => {
+            e.preventDefault();
+            isRegisterMode = !isRegisterMode;
+            document.getElementById('auth-title').innerText = isRegisterMode ? "Account erstellen" : "Willkommen zurück";
+            mainAuthBtn.innerText = isRegisterMode ? "Registrieren" : "Login";
+            document.getElementById('toggleText').innerText = isRegisterMode ? "Bereits einen Account?" : "Noch keinen Account?";
+            toggleAuth.innerText = isRegisterMode ? "Login" : "Registrieren";
+        };
+    }
+
+    // Abmelden Button im Warteraum
+    if(logoutBtn) {
+        logoutBtn.onclick = () => signOut(auth);
+    }
+
+    // Haupt-Button Klick
     if (mainAuthBtn) {
         mainAuthBtn.onclick = async () => {
             const email = document.getElementById('email').value;
@@ -56,24 +75,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 if (isRegisterMode) {
-                    // Registrierung
                     const res = await createUserWithEmailAndPassword(auth, email, pass);
                     await setDoc(doc(db, "users", res.user.uid), {
                         email: email,
                         approved: false,
                         createdAt: new Date().toISOString()
                     });
-                    alert("Registriert! Bitte warte auf die Freigabe durch den Admin.");
+                    alert("Account erstellt! Sobald dich der Admin freischaltet, hast du Zugriff.");
                 } else {
-                    // Login
                     await signInWithEmailAndPassword(auth, email, pass);
                 }
             } catch (err) {
-                alert("Fehler: " + err.message);
+                let msg = "Fehler: ";
+                if(err.code === "auth/invalid-credential") msg += "E-Mail oder Passwort falsch.";
+                else if(err.code === "auth/weak-password") msg += "Passwort muss mind. 6 Zeichen haben.";
+                else msg += err.message;
+                alert(msg);
             }
         };
     }
 });
+
 
 
 /* === 🔄 Auto-Update & Versioning === */
