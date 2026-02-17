@@ -1,85 +1,79 @@
+// Wir nutzen die CDN-Links, damit der Browser die Funktionen direkt laden kann
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// Deine Konfiguration von Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyAZUbw2JgQVCB_6MSSQQoM0QsPpw...", // Deine Daten aus dem Screenshot
+  apiKey: "AIzaSyAZUbw2JgQVCB_6MSSQQoM0QsPpwWDE7wk",
   authDomain: "ayto-solver.firebaseapp.com",
   projectId: "ayto-solver",
   storageBucket: "ayto-solver.firebasestorage.app",
   messagingSenderId: "590851817388",
-  appId: "1:590851817388:web:b743accfe5ab1ba..."
+  appId: "1:590851817388:web:b743accfe5ab1bac544409"
 };
 
+// Firebase initialisieren
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// Variable für den Modus (Login oder Registrieren)
 let isRegisterMode = false;
 
-// UI-Elemente
-const authScreen = document.getElementById('auth-screen');
-const loginFields = document.getElementById('login-fields');
-const waitingRoom = document.getElementById('waiting-room');
-const authTitle = document.getElementById('auth-title');
-const mainAuthBtn = document.getElementById('mainAuthBtn');
+// --- 🔐 AUTH-LOGIK ---
 
-// Auth-Status überwachen
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    const userDoc = await getDoc(doc(db, "users", user.uid));
-    const userData = userDoc.data();
+document.addEventListener('DOMContentLoaded', () => {
+    const mainAuthBtn = document.getElementById('mainAuthBtn');
+    const authScreen = document.getElementById('auth-screen');
+    const loginFields = document.getElementById('login-fields');
+    const waitingRoom = document.getElementById('waiting-room');
 
-    if (userData && userData.approved === true) {
-      authScreen.style.display = "none"; // App freigeben
-    } else {
-      loginFields.style.display = "none";
-      waitingRoom.style.display = "block";
-      authTitle.innerText = "Fast geschafft!";
+    // Prüfen, ob der User eingeloggt ist und Freigabe hat
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+            if (userDoc.exists() && userDoc.data().approved === true) {
+                authScreen.style.display = "none"; // App öffnen
+            } else {
+                loginFields.style.display = "none";
+                waitingRoom.style.display = "block"; // Warteraum anzeigen
+            }
+        } else {
+            authScreen.style.display = "flex";
+            loginFields.style.display = "flex";
+            waitingRoom.style.display = "none";
+        }
+    });
+
+    // Klick auf den Haupt-Button (Login oder Registrieren)
+    if (mainAuthBtn) {
+        mainAuthBtn.onclick = async () => {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+
+            if (!email || !pass) return alert("Bitte E-Mail und Passwort eingeben");
+
+            try {
+                if (isRegisterMode) {
+                    // Registrierung
+                    const res = await createUserWithEmailAndPassword(auth, email, pass);
+                    await setDoc(doc(db, "users", res.user.uid), {
+                        email: email,
+                        approved: false,
+                        createdAt: new Date().toISOString()
+                    });
+                    alert("Registriert! Bitte warte auf die Freigabe durch den Admin.");
+                } else {
+                    // Login
+                    await signInWithEmailAndPassword(auth, email, pass);
+                }
+            } catch (err) {
+                alert("Fehler: " + err.message);
+            }
+        };
     }
-  } else {
-    authScreen.style.display = "flex";
-    loginFields.style.display = "flex";
-    waitingRoom.style.display = "none";
-  }
 });
-
-// Login / Register Logik
-mainAuthBtn.onclick = async () => {
-  const email = document.getElementById('email').value;
-  const pass = document.getElementById('password').value;
-  
-  if(!email || !pass) return alert("Bitte alles ausfüllen");
-
-  try {
-    if (isRegisterMode) {
-      const res = await createUserWithEmailAndPassword(auth, email, pass);
-      await setDoc(doc(db, "users", res.user.uid), {
-        email: email,
-        approved: false,
-        createdAt: new Date().toISOString()
-      });
-      alert("Registriert! Warte nun auf die Freigabe.");
-    } else {
-      await signInWithEmailAndPassword(auth, email, pass);
-    }
-  } catch (err) {
-    alert("Fehler: " + err.message);
-  }
-};
-
-// Logout
-document.getElementById('logoutBtn').onclick = () => signOut(auth);
-
-// Toggle zwischen Login und Registrieren
-document.getElementById('toggleAuth').onclick = (e) => {
-  e.preventDefault();
-  isRegisterMode = !isRegisterMode;
-  authTitle.innerText = isRegisterMode ? "Account erstellen" : "Willkommen zurück";
-  mainAuthBtn.innerText = isRegisterMode ? "Registrieren" : "Login";
-  document.getElementById('toggleText').innerText = isRegisterMode ? "Bereits einen Account?" : "Noch keinen Account?";
-  document.getElementById('toggleAuth').innerText = isRegisterMode ? "Login" : "Registrieren";
-};
 
 
 /* === 🔄 Auto-Update & Versioning === */
